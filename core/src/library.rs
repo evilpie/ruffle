@@ -586,13 +586,18 @@ impl<'gc> FontMap<'gc> {
     pub fn find(&self, name: &str, is_bold: bool, is_italic: bool) -> Option<Font<'gc>> {
         // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
 
+        println!("find name: {name:?} is_bold: {is_bold}");
+
         // Exact match
         if let Some(font) = self
             .0
             .get(&FontDescriptor::from_parts(name, is_bold, is_italic))
         {
+            println!("found font");
             return Some(*font);
         }
+
+        println!("no direct match");
 
         if is_italic ^ is_bold {
             // If one is set (but not both), then try upgrading to bold italic...
@@ -640,6 +645,7 @@ impl<'gc> FontMap<'gc> {
             }
         }
 
+        println!("no found found");
         None
     }
 

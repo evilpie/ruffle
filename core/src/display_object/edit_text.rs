@@ -957,6 +957,8 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(edit_text.text_spans.displayed_text())
         {
+            // println!("text: {text:#?} font: {font:#?}");
+
             let baseline_adjustment =
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(

@@ -180,6 +180,66 @@ struct FontData {
     font_type: FontType,
 }
 
+use font_kit::source::SystemSource;
+
+use crate::swf::ShapeRecord;
+use crate::swf::StyleChangeData;
+
+use font_kit::outline::OutlineSink;
+use font_kit::hinting::HintingOptions;
+use pathfinder_geometry::vector::Vector2F;
+use pathfinder_geometry::line_segment::LineSegment2F;
+
+struct Foo {
+    shape: Vec<ShapeRecord>,
+    current_point: Option<Point<Twips>>,
+}
+
+fn to_twips(v: f32) -> Twips {
+    Twips::new((v * 10.0) as i32)
+}
+
+fn to_point(v: Vector2F) -> Point<Twips> {
+    // Flip the y axis ...
+    Point::new(to_twips(v.x()), to_twips(200.0 - v.y()))
+}
+
+impl OutlineSink for Foo {
+    fn move_to(&mut self, to: Vector2F) {
+        self.shape.push(ShapeRecord::StyleChange(Box::new(StyleChangeData {
+            move_to: Some(to_point(to)),
+            fill_style_0: Some(1),
+            fill_style_1: None,
+            line_style: None,
+            new_styles: None,
+        })));
+        self.current_point = Some(to_point(to));
+    }
+    fn line_to(&mut self, to: Vector2F) {
+        let delta = to_point(to) - self.current_point.unwrap();
+        self.current_point = Some(to_point(to));
+        self.shape.push(ShapeRecord::StraightEdge {
+            delta,
+        });
+    }
+    fn quadratic_curve_to(&mut self, ctrl: Vector2F, to: Vector2F) {
+        self.shape.push(ShapeRecord::CurvedEdge {
+           control_delta: to_point(ctrl) - self.current_point.unwrap(),
+           anchor_delta: to_point(to) - to_point(ctrl),
+        });
+        self.current_point = Some(to_point(to));
+    }
+    fn cubic_curve_to(&mut self, ctrl: LineSegment2F, to: Vector2F) {
+        unimplemented!();
+    }
+    fn close(&mut self) {
+    }
+}
+
+ use crate::font::SwfGlyphOrShape::Shape;
+ use crate::swf;
+
+
 impl<'gc> Font<'gc> {
     pub fn from_swf_tag(
         gc_context: &Mutation<'gc>,
@@ -197,28 +257,81 @@ impl<'gc> Font<'gc> {
             (0, 0, 0)
         };
 
-        let glyphs: Vec<Glyph> = tag
-            .glyphs
-            .into_iter()
-            .enumerate()
-            .map(|(index, swf_glyph)| {
-                let code = swf_glyph.code;
-                code_point_to_glyph.insert(code, index);
+        println!("descriptor: {descriptor:?}");
+        println!("ascent: {ascent:?}");
 
-                let glyph = Glyph {
-                    shape_handle: None.into(),
-                    advance: Twips::new(swf_glyph.advance.into()),
-                    shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph))),
-                };
+        let font = SystemSource::new()
+            .select_by_postscript_name("LiberationMono-Bold")
+            //.select_by_postscript_name("DejaVuSansMono-Oblique")
+            // .select_by_postscript_name("Roboto-Italic")
+            .unwrap()
+            .load()
+            .unwrap();
 
-                // Eager-load ASCII characters.
-                if code < 128 {
-                    glyph.shape_handle(renderer);
-                }
 
-                glyph
-            })
-            .collect();
+        let mut glyphs = Vec::new();
+        for i in 65..122 {
+
+            let glyph_id = if let Some(id) = font.glyph_for_char(i as u8 as char) {
+                id
+            } else {
+                continue;
+            };
+
+            let mut sink = Foo {
+                shape: Vec::new(),
+                current_point: None
+            };
+
+            font.outline(glyph_id, HintingOptions::None, &mut sink).unwrap();
+
+            let rect = Rectangle {
+                x_min: Twips::new(0),
+                x_max: Twips::new(2000),
+                y_min: Twips::new(0),
+                y_max: Twips::new(2000),
+            };
+
+            let glyph = swf::Glyph {
+                shape_records: sink.shape,
+                code: 82, // 'R',
+                advance: 14000,
+                bounds: None, // Some(rect)
+            };
+
+            glyphs.push(Glyph {
+                shape_handle: None.into(),
+                advance: Twips::new(12000.into()),
+                shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(glyph)))
+            });
+            code_point_to_glyph.insert(i as u16, glyphs.len() - 1);
+        }
+
+        // let glyphs: Vec<Glyph> = tag
+        //     .glyphs
+        //     .into_iter()
+        //     .skip(50)
+        //     .take(2)
+        //     .enumerate()
+        //     .map(|(index, swf_glyph)| {
+        //         let code = swf_glyph.code;
+        //         println!("code: {:?}", code);
+        //         code_point_to_glyph.insert(code, index);
+
+        //         let glyph = Glyph {
+        //             shape_handle: None.into(),
+        //             advance: Twips::new(swf_glyph.advance.into()),
+        //             shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph))),
+        //         };
+
+        //         // Eager-load ASCII characters.
+        //         if code < 128 {
+        //             glyph.shape_handle(renderer);
+        //         }
+
+        //         glyph
+        //     })
+        //     .collect();
 
         let kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips> = if let Some(layout) = &tag.layout {
             layout

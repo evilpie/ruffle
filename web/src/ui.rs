@@ -262,11 +262,13 @@ impl UiBackend for WebUiBackend {
 
     fn load_device_font(
         &self,
-        _name: &str,
+        name: &str,
         _is_bold: bool,
         _is_italic: bool,
         _register: &dyn FnMut(FontDefinition),
     ) {
+        println!("load_device_font {name:?}");
+
         // Because fonts must be loaded instantly (no async),
         // we actually just provide them all upfront at time of Player creation.
     }

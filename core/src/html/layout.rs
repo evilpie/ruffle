@@ -465,6 +465,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ) -> Option<Font<'gc>> {
         let font_name = span.font.to_utf8_lossy();
 
+        println!("resolve_font span: {span:?} is_device_font: {is_device_font}");
+
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
         if !is_device_font {

@@ -819,6 +819,8 @@ impl FormatSpans {
             }
         }
 
+        println!("spans: {:#?}", spans);
+
         Self {
             text,
             displayed_text: WString::new(),

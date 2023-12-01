@@ -13,6 +13,8 @@ byteorder = "1.5"
 bitstream-io = "1.8.0"
 flate2 = "1.0.28"
 fnv = "1.0.7"
+font-kit = { path = "../../font-kit" }
+pathfinder_geometry = "0.5"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 generational-arena = "0.2.9"
 indexmap = "2.1.0"
