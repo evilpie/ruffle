@@ -126,6 +126,9 @@ pub struct FileResults {
     /// The AVM type of the movie.
     #[serde(rename = "AVM Version")]
     pub vm_type: Option<AvmType>,
+
+    #[serde(rename = "AVM2 Packages")]
+    pub packages: String,
 }
 
 impl Default for FileResults {
@@ -153,6 +156,7 @@ impl FileResults {
             use_gpu: None,
             use_network_sandbox: None,
             vm_type: None,
+            packages: "".into(),
         }
     }
 }

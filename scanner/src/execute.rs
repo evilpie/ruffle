@@ -5,10 +5,13 @@ use crate::file_results::{AvmType, FileResults, Step};
 use crate::logging::{ScanLogBackend, ThreadLocalScanLogger, LOCAL_LOGGER};
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::limits::ExecutionLimit;
-use ruffle_core::swf::{decompress_swf, parse_swf};
+use ruffle_core::swf::{decompress_swf, parse_swf, Tag};
+use ruffle_core::swf::avm2::read::Reader;
+use ruffle_core::swf::avm2::types::Namespace;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use std::io::{stdout, Write};
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -128,6 +131,27 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
                     true => AvmType::Avm2,
                     false => AvmType::Avm1,
                 });
+
+                let mut packages = HashSet::new();
+                for tag in swf.tags {
+                    if let Tag::DoAbc2(do_abc) = tag {
+                        let mut reader = Reader::new(do_abc.data);
+                        let parsed = reader.read().unwrap();
+
+                        for namespace in &parsed.constant_pool.namespaces {
+                            match namespace {
+                                Namespace::Package(index) => {
+                                    let index = index.as_u30() as usize -1;
+                                    packages.insert(parsed.constant_pool.strings[index].clone());
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                let mut packages: Vec<String> = packages.drain().collect();
+                packages.sort();
+                file_result.packages = packages.join(" ");
             }
             Err(e) => {
                 file_result.error = Some(format!("Parse error: {e}"));

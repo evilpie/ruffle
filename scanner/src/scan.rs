@@ -68,6 +68,7 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> 
                             use_gpu,
                             use_network_sandbox,
                             vm_type,
+                            packages,
                         } = child_results;
 
                         file_results.hash = hash;
@@ -85,6 +86,7 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> 
                         file_results.use_gpu = use_gpu;
                         file_results.use_network_sandbox = use_network_sandbox;
                         file_results.vm_type = vm_type;
+                        file_results.packages = packages;
                     }
                     Err(e) => {
                         file_results.error = Some(e.to_string());
