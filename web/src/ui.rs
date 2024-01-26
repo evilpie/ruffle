@@ -1,5 +1,6 @@
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
+use ruffle_core::backend::navigator::OwnedFuture;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter,
 };
@@ -8,6 +9,8 @@ use ruffle_core::backend::ui::{
 };
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
+use std::ops::Deref;
+use std::cell::Cell;
 use url::Url;
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, HtmlDocument, HtmlTextAreaElement};
@@ -34,20 +37,39 @@ impl std::error::Error for FullScreenError {
     }
 }
 
+enum Handle {
+    Writable(FileHandle),
+    Readable(FileHandle)
+}
+
+impl Deref for Handle {
+    type Target = FileHandle;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Writable(handle) | Self::Readable(handle) => handle
+        }
+    }
+}
+
 pub struct WebFileDialogResult {
-    handle: Option<FileHandle>,
+    handle: Option<Handle>,
     contents: Vec<u8>,
 }
 
 impl WebFileDialogResult {
-    pub async fn new(handle: Option<FileHandle>) -> Self {
+    pub async fn new_readable(handle: Option<FileHandle>) -> Self {
         let contents = if let Some(handle) = handle.as_ref() {
             handle.read().await
         } else {
             Vec::new()
         };
 
-        Self { handle, contents }
+        Self { handle: handle.map(Handle::Readable), contents }
+    }
+
+    pub async fn new_writable(handle: Option<FileHandle>) -> Self {
+        Self { handle: handle.map(Handle::Writable), contents: Vec::new() }
     }
 }
 
@@ -112,8 +134,21 @@ impl FileDialogResult for WebFileDialogResult {
         &self.contents
     }
 
-    fn write(&self, _data: &[u8]) {
-        //NOOP
+    fn write(&mut self, data: &[u8]) -> Option<OwnedFuture<(), ()>> {
+        match &self.handle {
+            Some(Handle::Writable(handle)) => {
+                self.contents.clear();
+                self.contents.extend_from_slice(data);
+
+                let data = data.clone();
+                Some(Box::pin(async {
+                    handle.write(data).await;
+                    // println!("{:?}", data);
+                    Ok(())
+                }))
+            }
+            _ => panic!("should only call write on some writable handle!")
+        }
     }
 
     fn refresh(&mut self) {}
@@ -303,7 +338,7 @@ impl UiBackend for WebUiBackend {
             }
 
             let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                WebFileDialogResult::new(dialog.pick_file().await).await,
+                WebFileDialogResult::new_readable(dialog.pick_file().await).await,
             ));
             result
         }))
@@ -335,7 +370,7 @@ impl UiBackend for WebUiBackend {
                 .set_file_name(&file_name);
 
             let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                WebFileDialogResult::new(dialog.save_file().await).await,
+                WebFileDialogResult::new_writable(dialog.save_file().await).await,
             ));
             result
         }))

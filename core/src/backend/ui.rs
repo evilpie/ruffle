@@ -53,7 +53,7 @@ pub trait FileDialogResult: Downcast {
     /// Write the given data to the chosen file
     /// This will not necessarily by reflected in future calls to other functions (such as [FileDialogResult::size]),
     /// until [FileDialogResult::refresh] is called
-    fn write(&self, data: &[u8]);
+    fn write(&mut self, data: &[u8]) -> Option<OwnedFuture<(), ()>>;
     /// Refresh any internal metadata, any future calls to other functions (such as [FileDialogResult::size]) will reflect
     /// the state at the time of the last refresh
     fn refresh(&mut self);
@@ -367,6 +367,6 @@ impl FileDialogResult for NullFileDialogResult {
         &[]
     }
 
-    fn write(&self, _data: &[u8]) {}
+    fn write(&mut self, _data: &[u8]) -> Option<OwnedFuture<(), ()>> { None }
     fn refresh(&mut self) {}
 }
