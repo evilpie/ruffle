@@ -1084,6 +1084,8 @@ impl<'gc> Value<'gc> {
 
         let debug_str = match self {
             Value::Object(obj) if obj.as_primitive().is_none() => {
+                println!("{self:#?} {obj:#?} {:#?}", obj.instance_of_class_definition());
+
                 // Flash prints the class name (ignoring the toString() impl on the object),
                 // followed by something that looks like an address (it varies between executions).
                 // For now, we just set the "address" to all zeroes, on the off chance that some

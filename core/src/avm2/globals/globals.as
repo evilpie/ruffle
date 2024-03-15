@@ -20,6 +20,7 @@ include "SyntaxError.as"
 include "UninitializedError.as"
 include "URIError.as"
 include "VerifyError.as"
+include "Namespace.as"
 
 include "avmplus.as"
 

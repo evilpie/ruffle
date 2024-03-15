@@ -586,12 +586,7 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(number, activation, number::create_class(activation), script);
     avm2_system_class!(int, activation, int::create_class(activation), script);
     avm2_system_class!(uint, activation, uint::create_class(activation), script);
-    avm2_system_class!(
-        namespace,
-        activation,
-        namespace::create_class(activation),
-        script
-    );
+
     avm2_system_class!(array, activation, array::create_class(activation), script);
 
     // TODO: this should _not_ be exposed as a ClassObject, getDefinitionByName etc.
@@ -739,6 +734,7 @@ fn load_playerglobal<'gc>(
             ("", "TypeError", typeerror),
             ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
+            ("", "Namespace", namespace),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("flash.display", "AVM1Movie", avm1movie),
