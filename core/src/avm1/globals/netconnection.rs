@@ -231,6 +231,8 @@ fn add_header<'gc>(
         .unwrap_or(&Value::Bool(true))
         .as_bool(activation.swf_version());
 
+    println!("add_header {args:#?}");
+
     let value = serialize(activation, *args.get(2).unwrap_or(&Value::Null));
 
     if let Some(handle) = net_connection.handle() {
@@ -261,6 +263,8 @@ fn call<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
     let mut arguments = Vec::new();
+
+    println!("call {args:#?}");
 
     for arg in &args[2..] {
         arguments.push(Rc::new(serialize(activation, *arg)));

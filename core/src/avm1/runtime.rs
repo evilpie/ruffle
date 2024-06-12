@@ -523,6 +523,23 @@ impl<'gc> Avm1<'gc> {
         registry.get(symbol, is_case_sensitive)
     }
 
+    pub fn get_registered_constructor_symbol(
+        &mut self,
+        swf_version: u8,
+        constructor: FunctionObject<'gc>,
+    ) -> Option<AvmString<'gc>> {
+        let is_case_sensitive = swf_version >= 7;
+        let registry = if is_case_sensitive {
+            &self.constructor_registry_case_sensitive
+        } else {
+            &self.constructor_registry_case_insensitive
+        };
+
+        // println!("registry: {:#?}", registry);
+
+        registry.iter().find(|(symbol, reg_constructor)| reg_constructor.as_ptr() == constructor.as_ptr()).map(|(sym, _)| sym)
+    }
+
     pub fn register_constructor(
         &mut self,
         swf_version: u8,

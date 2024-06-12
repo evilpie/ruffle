@@ -9,7 +9,7 @@ use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Lso, Reference, Value as AmfValue};
+use flash_lso::types::{ClassDefinition, Lso, Reference, Value as AmfValue};
 use gc_arena::{Collect, GcCell};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -78,7 +78,18 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::String(string) => AmfValue::String(string.to_string()),
         Value::Object(object) => {
             let lso = new_lso(activation, "root", object);
-            AmfValue::Object(lso.into_iter().collect(), None)
+
+            let class_defintion = if let Ok(Value::Object(Object::FunctionObject(constructor))) =
+                object.get("__constructor__", activation)
+            {
+                let symbol = activation.context.avm1.get_registered_constructor_symbol(
+                    activation.base_clip().movie().version(),
+                    constructor,
+                );
+                symbol.map(|sym| ClassDefinition::default_with_name(sym.to_string()))
+            } else { None };
+
+            AmfValue::Object(lso.into_iter().collect(), class_defintion)
         }
         Value::MovieClip(_) => AmfValue::Undefined,
     }
