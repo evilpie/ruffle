@@ -67,15 +67,29 @@ async function queryTabStatus(
 
     listener("status_message_init");
 
+    console.log("connecting to", activeTab);
+
     let response;
     try {
         response = await utils.tabs.sendMessage(activeTab.id!, {
             type: "ping",
         });
     } catch (e) {
-        listener("status_result_protected");
-        reloadButton.disabled = true;
-        return;
+        console.error("error1", e);
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        try {
+            response = await utils.tabs.sendMessage(activeTab.id!, {
+                type: "ping",
+            });
+        } catch (e) {
+            console.error("error2", e);
+
+            listener("status_result_protected");
+            reloadButton.disabled = true;
+            return;
+        }
     }
 
     if (!response) {
@@ -200,16 +214,26 @@ window.addEventListener("DOMContentLoaded", async () => {
         !(await utils.hasHostPermissionForActiveTab())
     ) {
         permissionsButton.classList.remove("hidden");
-        permissionsButton.addEventListener("click", async () => {
-            const grant = await utils.permissions.request({
+        permissionsButton.addEventListener("click", () => {
+            // todo rename request_permission?
+            // send  id;
+            chrome.runtime.sendMessage({type: "reload_with_permission", tabId: activeTab.id!, url: url.toString()});
+
+            utils.permissions.request({
                 origins: [url.toString()],
             });
+
+            // window.close();
+
+            /*
+            const grant = await 
             if (grant) {
                 // Unfortunately, due to the way the popup disappears, this will
                 // only work if the popup and the permission dialog happen to overlap
                 await utils.tabs.reload(activeTab.id!);
                 window.close();
             }
+            */
         });
     }
 });

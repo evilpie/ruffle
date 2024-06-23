@@ -62,6 +62,25 @@ function onMessage(
             chrome.tabs.create({
                 url: utils.runtime.getURL(`player.html#${request.url}`),
             });
+        } else if (request.type == "reload_with_permission") {
+            const tabId = request.tabId;
+            const start = Date.now();
+
+            function onAdded(permissions: any) {
+                // XXX utils.permissions generates some TypeScript error.
+                browser.permissions.onAdded.removeListener(onAdded);
+
+                // XXX check URL
+                // if (permissions.origins && permissions.origin.length == 1 && ...
+
+                // XXX check time?
+
+
+                // XXX check if tab still has the same URL?
+                utils.tabs.reload(tabId);
+            }
+
+            utils.permissions.onAdded.addListener(onAdded);
         }
     }
 }

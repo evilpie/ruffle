@@ -14,7 +14,13 @@ export interface OpenURLMessage {
     url: string;
 }
 
-export type Message = LoadMessage | PingMessage | OpenURLMessage;
+export interface ReloadWithPermissionMessage {
+    type: "reload_with_permission";
+    url: string;
+    tabId: number;
+}
+
+export type Message = LoadMessage | PingMessage | OpenURLMessage | ReloadWithPermissionMessage;
 
 export function isMessage(object: unknown): object is Message {
     return (object as Message).type !== undefined;
