@@ -22,4 +22,5 @@ jobs:
             repository: apache/royale-asjs
             ref: develop
             path: royale-asjs
+      - run: cd royale-asjs
       - run: ant build
