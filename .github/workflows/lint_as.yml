@@ -21,3 +21,4 @@ jobs:
         with:
             repository: apache/royale-asjs
             ref: develop
+            path: royale-asjs
