@@ -16,3 +16,8 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
           architecture: x64
+      - name: Checkout Apache Royale ASJS
+        uses: actions/checkout@v4
+        with:
+            repository: apache/royale-asjs
+            ref: develop
