@@ -19,7 +19,7 @@ jobs:
       - name: Checkout Apache Royale ASJS
         uses: actions/checkout@v4
         with:
-            repository: apache/royale-asjs
+            repository: apache/royale-compiler
             ref: develop
-            path: royale-asjs
-      - run: cd royale-asjs; touch foo; echo -ne '\n' | ant all
+            path: royale-compiler
+      - run: cd royale-compiler; ant main
